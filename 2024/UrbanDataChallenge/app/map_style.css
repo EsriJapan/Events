@@ -1,0 +1,67 @@
+[hidden] {display: none!important;}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+body {
+  display: flex;
+}
+
+#main {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+}
+
+#thirdpt{
+  display: flex;
+  flex-direction: column;
+  width:100%;
+}
+
+/* arcgis js */
+
+#main #arcgis {
+  height: 100%;
+  width: 100%;
+  flex-wrap: wrap;
+}
+.editor-config {
+    width: 100px;
+    display: inline-block;
+} 
+.esri-editor .esri-item-list__scroller {
+     max-height: 150px;
+}
+#setting {
+    padding: 10px;
+}
+
+/* deckgl */
+
+#thirdpt #deckgl {
+  height: 50%;
+}
+
+/* cesium */
+
+#thirdpt #cesium {
+  height: 50%; 
+}
+  
+#deckicon {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+/* 範囲検索用 */
+
+#mapview{
+  width:100%;
+  height: 200px;
+}

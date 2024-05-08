@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>DisplayMap</title>
+        <link rel="stylesheet" href="./map_style.css">
+        <script type="module" src="https://js.arcgis.com/calcite-components/2.7.1/calcite.esm.js"></script>
+        <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/calcite-components/2.7.1/calcite.css" />
+        <!-- cesium -->
+        <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Cesium.js"></script>
+        <link href="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+        <script src="https://unpkg.com/@esri/arcgis-rest-request@4.0.0/dist/bundled/request.umd.js"></script>
+        <script src="https://unpkg.com/@esri/arcgis-rest-feature-service@4.0.0/dist/bundled/feature-service.umd.js"></script>
+        <!-- deckgl & maplibre -->
+        <script src="https://unpkg.com/deck.gl@latest/dist.min.js"></script>
+        <script src="https://unpkg.com/@loaders.gl/i3s@3.4.15/dist/dist.min.js"></script>
+        <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.1.1/dist/maplibre-gl.css" />
+        <script src="https://unpkg.com/maplibre-gl@4.1.1/dist/maplibre-gl.js"></script>
+        <!-- ArcGIS JS -->
+        <link rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/light/main.css">
+        <script src="https://js.arcgis.com/4.29/"></script>
+    </head>
+    <body>
+        <calcite-modal aria-labelledby="modal-title" id="adddatamodal">
+                他Hubサイトのリンク追加
+            </div>
+            <div slot="content">
+                <calcite-label>
+                    追加する Hub サイト名を入力
+                    <calcite-input placeholder="オープンデータサイト名" type="text" id="dcattitle" required></calcite-input>
+                </calcite-label>
+                <calcite-label>
+                    追加したい Hub サイト内のデータ URL を入力(シーンレイヤー及びフィーチャレイヤーのみ追加)
+                    <calcite-input placeholder="https://example.hub.arcgis.com/data.json" type="url" id="dcaturl" required></calcite-input>
+                </calcite-label>
+            </div>
+            <calcite-button slot="secondary" width="full" id="add_btn">
+                追加する
+            </calcite-button>
+            <calcite-button slot="primary" width="full"appearance="outline" id="cancel_btn">
+                キャンセル
+            </calcite-button>
+        </calcite-modal>
+        <calcite-shell  content-behind>
+            <calcite-navigation slot="header">
+                <calcite-navigation-logo slot="logo" heading="CrossPlatform GISViewer"></calcite-navigation-logo>
+                <calcite-dropdown slot="content-end" width="m" close-on-select-disabled>
+                    <calcite-button slot="trigger" scale="l" kind="inverse" appearance="outline-fill" icon-start="classify-pixels">
+                        View Select
+                    </calcite-button>
+                    <calcite-dropdown-group id="view_select" selection-mode="multiple" group-title="表示したい view を選択">
+                        <calcite-dropdown-item label="arcgis" selected>ArcGIS View</calcite-dropdown-item>
+                        <calcite-dropdown-item label="deckgl" selected>DeckGL View</calcite-dropdown-item>
+                        <calcite-dropdown-item label="cesium" selected>Cesium View</calcite-dropdown-item>
+                    </calcite-dropdown-group>
+                </calcite-dropdown>
+            </calcite-navigation>
+            <calcite-shell-panel width-scale="m" slot="panel-start" position="start" id="shell-panel-end">
+                <calcite-action-bar slot="action-bar" scale="s" id="actionbar">
+                    <calcite-action-group>
+                        <calcite-action active text="AddLayer" icon="plus-circle" text="レイヤーを追加する"></calcite-action>
+                        <calcite-action active text="LayersList" icon="layers" test="レイヤーの一覧を表示する"></calcite-action>
+                    </calcite-action-group>
+                </calcite-action-bar>
+                <calcite-flow id="LayersList">
+                    <calcite-flow-item heading="レイヤー一覧">
+                        <calcite-list>
+                        </calcite-list>
+                    </calcite-flow-item>
+                </calcite-flow>
+                <calcite-flow id="AddLayer" hidden>
+                    <calcite-flow-item heading="レイヤーの追加">
+                        <calcite-block id="search" class="flow-item-block" heading="レイヤーの絞り込み" description="追加済みのレイヤーを検索" collapsible open>
+                            <calcite-icon scale="s" slot="icon" icon="search"></calcite-icon>
+                            <calcite-label>
+                                レイヤー名を入力:
+                                <calcite-filter placeholder="レイヤー名で絞り込み" id="namefilter"></calcite-filter>
+                            </calcite-label>
+                            <calcite-block-section text="特定の範囲で絞り込み" toggle-display="switch" id="extentfilter">
+                                <div id="mapview"></div>
+                            </calcite-block-section>
+                        </calcite-block>
+                        <calcite-block id="scene" class="flow-item-block" heading="SceneServer" description="SceneLayer のアイテム一覧" collapsible>
+                            <calcite-icon scale="s" slot="icon" icon="tile-layer"></calcite-icon>
+                        </calcite-block>
+                        <calcite-block id="feature" class="flow-item-block" heading="FeatureServer" description="FeatureLayer のアイテム一覧" collapsible>
+                            <calcite-icon scale="s" slot="icon" icon="layer"></calcite-icon>
+                        </calcite-block>
+                        <calcite-fab slot="fab" id="Loaddcat"></calcite-fab>
+                    </calcite-flow-item>
+                </calcite-flow>
+            </calcite-shell-panel>
+            <calcite-panel>
+                <div id="main">
+                    <div id="arcgis"></div>
+                    <div id="thirdpt">
+                        <div id="deckgl"></div>
+                        <img id="deckicon" src="./deckgl.png">
+                        <div id="cesium"></div>
+                    </div>
+                </div>
+            </calcite-panel>
+        </calcite-shell>
+        <script src="arcgis.js"></script>
+        <script src="deckjs.js"></script>
+        <script src="cesiumjs.js"></script>
+        <script src="menu.js"></script>
+    </body>
+</html> 
